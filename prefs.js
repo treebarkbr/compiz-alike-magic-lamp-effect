@@ -40,7 +40,8 @@ export default class Prefs extends ExtensionPreferences {
             effectComboBox: this.addComboBox(settingsData.EFFECT),
             durationSlider: this.addSlider(settingsData.DURATION, 100.0, 1000.0, 0),
             xTilesSlider: this.addSlider(settingsData.X_TILES, 3.0, 50.0, 0),
-            yTilesSlider: this.addSlider(settingsData.Y_TILES, 3.0, 50.0, 0)
+            yTilesSlider: this.addSlider(settingsData.Y_TILES, 3.0, 50.0, 0),
+            slowMoSwitch: this.addBooleanSwitch(settingsData.SHIFT_SLOW_MO)
         };
 
         const group1 = Adw.PreferencesGroup.new();
@@ -51,9 +52,13 @@ export default class Prefs extends ExtensionPreferences {
         group2.add(this.newRow("X Tiles", fields.xTilesSlider));
         group2.add(this.newRow("Y Tiles", fields.yTilesSlider));
 
+        const group3 = Adw.PreferencesGroup.new();
+        group3.add(this.newRow("Slow-mo on Shift+minimize (easter egg)", fields.slowMoSwitch));
+
         const page = Adw.PreferencesPage.new();
         page.add(group1);
         page.add(group2);
+        page.add(group3);
 
         const header = this.findWidgetByType(window.get_content(), Adw.HeaderBar);
         if (header) {
@@ -63,17 +68,19 @@ export default class Prefs extends ExtensionPreferences {
                 settingsData.DURATION.set(500.0);
                 settingsData.X_TILES.set(15.0);
                 settingsData.Y_TILES.set(20.0);
+                settingsData.SHIFT_SLOW_MO.set(false);
 
                 fields.effectComboBox.set_active(0);
                 fields.durationSlider.set_value(settingsData.DURATION.get());
                 fields.xTilesSlider.set_value(settingsData.X_TILES.get());
                 fields.yTilesSlider.set_value(settingsData.Y_TILES.get());
+                fields.slowMoSwitch.set_active(false);
             });
 
             header.pack_start(resetButton);
         }
 
-        window.set_default_size(750, 380);
+        window.set_default_size(750, 440);
         window.add(page);
     }
 

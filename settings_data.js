@@ -49,5 +49,11 @@ export class SettingsData {
             get: function () { return settings.get_double(this.key); },
             set: function (v) { settings.set_double(this.key, v); }
         };
+
+        this.SHIFT_SLOW_MO = {
+            key: 'shift-slow-mo',
+            get: function () { return settings.get_boolean(this.key); },
+            set: function (v) { settings.set_boolean(this.key, v); }
+        };
     }
 }

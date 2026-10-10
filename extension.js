@@ -36,6 +36,7 @@ import { SettingsData } from './settings_data.js';
 
 const MINIMIZE_EFFECT_NAME = 'minimize-magic-lamp-effect';
 const UNMINIMIZE_EFFECT_NAME = 'unminimize-magic-lamp-effect';
+const SLOW_MO_FACTOR = 10;
 
 export default class CompizMagicLampEffectExtension extends Extension {
 
@@ -66,6 +67,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             return;
         };
 
+        this._shiftHeld = false;
         this.minimizeId = global.window_manager.connect("minimize", (e, actor) => {
             if (Main.overview.visible) {
                 Main.wm._shellwm.original_completed_minimize(actor);
@@ -76,7 +78,8 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
             this.destroyActorEffect(actor);
 
-            actor.add_effect_with_name(MINIMIZE_EFFECT_NAME, new MagicLampMinimizeEffect({settingsData: this.settingsData, icon: icon}));
+            let slowMo = this.settingsData.SHIFT_SLOW_MO.get() && this._shiftHeld;
+            actor.add_effect_with_name(MINIMIZE_EFFECT_NAME, new MagicLampMinimizeEffect({settingsData: this.settingsData, icon: icon, slowMo: slowMo}));
         });
 
         this.unminimizeId = global.window_manager.connect("unminimize", (e, actor) => {
@@ -93,6 +96,23 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
             actor.add_effect_with_name(UNMINIMIZE_EFFECT_NAME, new MagicLampUnminimizeEffect({settingsData: this.settingsData, icon: icon}));
         });
+
+        this._shiftPressId = global.stage.connect('key-press-event', (stage, event) => {
+            let symbol = event.get_key_symbol();
+            if (event.get_state() & Clutter.ModifierType.SHIFT_MASK ||
+                symbol === Clutter.KEY_Shift_L ||
+                symbol === Clutter.KEY_Shift_R) {
+                this._shiftHeld = true;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+        this._shiftReleaseId = global.stage.connect('key-release-event', (stage, event) => {
+            let symbol = event.get_key_symbol();
+            if (symbol === Clutter.KEY_Shift_L || symbol === Clutter.KEY_Shift_R) {
+                this._shiftHeld = false;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
     }
 
     disable() {
@@ -106,6 +126,15 @@ export default class CompizMagicLampEffectExtension extends Extension {
         if (this.unminimizeId) {
             global.window_manager.disconnect(this.unminimizeId);
             this.unminimizeId = null;
+        }
+
+        if (this._shiftPressId) {
+            global.stage.disconnect(this._shiftPressId);
+            this._shiftPressId = null;
+        }
+        if (this._shiftReleaseId) {
+            global.stage.disconnect(this._shiftReleaseId);
+            this._shiftReleaseId = null;
         }
     
         global.get_window_actors().forEach((actor) => {
@@ -190,6 +219,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         super._init();
 
         this.settingsData = params.settingsData;
+        this.slowMo = !!params.slowMo;
 
         this.EPSILON = 40;
 
@@ -304,7 +334,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
 
         this.set_n_tiles(this.X_TILES, this.Y_TILES);
         
-        this.timerId = new Clutter.Timeline({ actor: this.actor, duration: this.DURATION + (this.monitor.width * this.monitor.height) / (this.window.width * this.window.height) });
+        this.timerId = new Clutter.Timeline({ actor: this.actor, duration: (this.slowMo ? SLOW_MO_FACTOR : 1) * (this.DURATION + (this.monitor.width * this.monitor.height) / (this.window.width * this.window.height)) });
         this.newFrameEvent = this.timerId.connect('new-frame', this.on_tick_elapsed.bind(this));
         this.completedEvent = this.timerId.connect('completed', this.destroy.bind(this));
         this.timerId.start();

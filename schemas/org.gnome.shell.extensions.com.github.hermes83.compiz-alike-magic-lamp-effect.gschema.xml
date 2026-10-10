@@ -25,5 +25,11 @@
 			<summary>Y Tiles</summary>
 			<description/>
 		</key>
+
+		<key type="b" name="shift-slow-mo">
+			<default>false</default>
+			<summary>Slow-mo on Shift+minimize</summary>
+			<description>Hold Shift while minimizing to play the magic lamp effect in slow motion (macOS-style easter egg).</description>
+		</key>
 	</schema>
 </schemalist>
